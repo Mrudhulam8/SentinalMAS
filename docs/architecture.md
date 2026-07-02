@@ -36,7 +36,7 @@ part of the linear log-processing flow.
 
 Every external dependency is optional. With no credentials configured:
 threat-intel lookups return `None`, LLM explanations are skipped, asset context
-falls back to a local seed registry, and Firestore persistence is a no-op. The
+falls back to a local seed registry, and Postgres persistence is a no-op. The
 full pipeline and all report formats still run — this is the path exercised by
 the test suite. See [testing-and-performance.md](testing-and-performance.md).
 
@@ -48,14 +48,19 @@ the test suite. See [testing-and-performance.md](testing-and-performance.md).
 | Log Analysis | Parses logs and detects attacks |
 | Threat Intelligence | Checks IP/domain reputation (AbuseIPDB, VirusTotal), maps MITRE ATT&CK |
 | Vulnerability | Maps software to CVEs via NVD, CVSS scoring |
-| Asset Context | Determines business criticality from Firestore asset registry |
+| Asset Context | Determines business criticality from the `assets` registry table |
 | Correlation | Merges evidence into incidents |
 | Risk Assessment | Calculates risk score, threat level, priority |
 | Response | Recommends mitigation actions |
 | Report | Generates PDF/HTML/JSON incident reports |
 
-## Data Model (Firestore collections)
+## Data Model (Postgres tables)
+
+Each table stores the document as a `jsonb` `data` column keyed by its natural
+id, so flat log entries and nested incidents round-trip without a rigid schema.
+Tables are created automatically on first write.
 
 - `logs`: id, timestamp, ip, username, event, severity, source
-- `assets`: asset_id, hostname, owner, department, criticality
-- `incidents`: incident_id, risk, attack, status, timeline, mitre_mapping, recommendations
+- `findings`: id, attack_type, ip, username, severity, evidence, threat_intel, asset_context
+- `assets`: ip, asset_id, hostname, owner, department, criticality, data_sensitivity
+- `incidents`: incident_id, risk_score, threat_level, priority, attack_types, mitre_techniques, recommended_actions, findings, status

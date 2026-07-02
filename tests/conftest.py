@@ -1,6 +1,6 @@
 """Shared pytest configuration.
 
-Runs the whole suite with Firestore/LLM disabled so tests are deterministic
+Runs the whole suite with the database/LLM disabled so tests are deterministic
 and offline. The pipeline is designed to degrade gracefully to local seed data
 when no credentials are present, which is exactly the path we exercise here.
 """

@@ -1,11 +1,9 @@
 """Asset Context Agent: maintains asset registry (owner, department, criticality, sensitivity).
 
-Reads from Firestore `assets` collection when available. Falls back to a small
-local seed registry so the pipeline is demoable offline / before Firebase is wired up.
+Reads from the `assets` table when a database is configured. Falls back to a
+small local seed registry so the pipeline is demoable offline / before a
+database is wired up.
 """
-import logging
-
-logger = logging.getLogger(__name__)
 
 # criticality: 1 (low) - 5 (critical)
 _LOCAL_SEED_ASSETS = {
@@ -29,15 +27,10 @@ _asset_cache: dict[str, dict | None] = {}
 
 
 def _lookup_asset(ip: str) -> dict | None:
-    try:
-        from backend.firebase_client import get_firestore
-        db = get_firestore()
-        query = db.collection("assets").where("ip", "==", ip).limit(1).stream()
-        for doc in query:
-            return doc.to_dict()
-    except Exception:
-        logger.debug("Firestore unavailable; using local asset seed for %s", ip)
-
+    from backend.db import get_asset_by_ip as db_get_asset
+    asset = db_get_asset(ip)
+    if asset is not None:
+        return asset
     return _LOCAL_SEED_ASSETS.get(ip)
 
 
