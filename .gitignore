@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+firebase-service-account.json
+node_modules/
+frontend/dist/
+*.log
+.DS_Store
