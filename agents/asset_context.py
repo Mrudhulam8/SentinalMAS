@@ -24,7 +24,11 @@ _LOCAL_SEED_ASSETS = {
 }
 
 
-def get_asset_by_ip(ip: str) -> dict | None:
+# Per-IP lookup cache: many findings share the same IP, so resolve each once.
+_asset_cache: dict[str, dict | None] = {}
+
+
+def _lookup_asset(ip: str) -> dict | None:
     try:
         from backend.firebase_client import get_firestore
         db = get_firestore()
@@ -32,9 +36,15 @@ def get_asset_by_ip(ip: str) -> dict | None:
         for doc in query:
             return doc.to_dict()
     except Exception:
-        logger.warning("Firestore not configured; using local asset seed for %s", ip, exc_info=True)
+        logger.debug("Firestore unavailable; using local asset seed for %s", ip)
 
     return _LOCAL_SEED_ASSETS.get(ip)
+
+
+def get_asset_by_ip(ip: str) -> dict | None:
+    if ip not in _asset_cache:
+        _asset_cache[ip] = _lookup_asset(ip)
+    return _asset_cache[ip]
 
 
 def enrich_finding(finding: dict) -> dict:
