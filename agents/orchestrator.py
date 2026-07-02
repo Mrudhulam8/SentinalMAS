@@ -83,3 +83,34 @@ def run_pipeline(entries: list[dict]) -> dict:
         "findings": result.get("findings", []),
         "incidents": result.get("incidents", []),
     }
+
+
+NODE_ORDER = [
+    "log_analysis", "threat_intel", "asset_context",
+    "correlation", "risk_assessment", "response",
+]
+
+
+def stream_pipeline(entries: list[dict]):
+    """Yields one progress event per completed agent node, then a final 'done' event."""
+    graph = get_graph()
+    accumulated_state = {"entries": entries}
+
+    for update in graph.stream({"entries": entries}, stream_mode="updates"):
+        for node_name, partial in update.items():
+            accumulated_state.update(partial)
+            yield {
+                "node": node_name,
+                "status": "completed",
+                "findings_count": len(accumulated_state.get("findings", [])),
+                "incidents_count": len(accumulated_state.get("incidents", [])),
+            }
+
+    yield {
+        "node": "done",
+        "status": "completed",
+        "result": {
+            "findings": accumulated_state.get("findings", []),
+            "incidents": accumulated_state.get("incidents", []),
+        },
+    }

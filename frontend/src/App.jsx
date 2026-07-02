@@ -1,121 +1,111 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useRef, useState } from 'react'
+import { downloadReport, streamPipeline, uploadLog } from './api/client'
+import PipelineStatus from './components/PipelineStatus'
+import IncidentsTable from './components/IncidentsTable'
+import RiskChart from './components/RiskChart'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [statusByNode, setStatusByNode] = useState({})
+  const [running, setRunning] = useState(false)
+  const [incidents, setIncidents] = useState([])
+  const [findingCount, setFindingCount] = useState(0)
+  const [error, setError] = useState(null)
+  const [fileName, setFileName] = useState(null)
+  const fileInputRef = useRef(null)
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setError(null)
+    setFileName(file.name)
+    setStatusByNode({})
+    setIncidents([])
+    setFindingCount(0)
+    setRunning(true)
+
+    try {
+      const uploadResult = await uploadLog(file)
+      const entries = uploadResult.entries
+
+      await streamPipeline(entries, (event) => {
+        if (event.node === 'done') {
+          setIncidents(event.result.incidents)
+          setFindingCount(event.result.findings.length)
+          setRunning(false)
+          return
+        }
+        setStatusByNode((prev) => ({ ...prev, [event.node]: event.status }))
+        setFindingCount(event.findings_count ?? 0)
+      })
+    } catch (err) {
+      setError(err.message)
+      setRunning(false)
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+    <div className="app">
+      <header>
+        <h1>SecureOrch</h1>
+        <p>Multi-Agent AI Security Operations Center</p>
+      </header>
+
+      <section className="upload-panel">
+        <label className="upload-button">
+          {running ? 'Processing…' : 'Upload security log (CSV / JSON / TXT / Apache / Linux)'}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,.json,.txt,.log"
+            onChange={handleFileChange}
+            disabled={running}
+            hidden
+          />
+        </label>
+        {fileName && <span className="file-name">{fileName}</span>}
+        {error && <p className="error">{error}</p>}
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <section className="summary-bar">
+        <div className="summary-card">
+          <span className="summary-value">{findingCount}</span>
+          <span className="summary-label">Findings</span>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+        <div className="summary-card">
+          <span className="summary-value">{incidents.length}</span>
+          <span className="summary-label">Incidents</span>
+        </div>
+        <div className="summary-card">
+          <span className="summary-value">
+            {incidents.filter((i) => i.threat_level === 'Critical').length}
+          </span>
+          <span className="summary-label">Critical</span>
         </div>
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <section className="grid">
+        <PipelineStatus statusByNode={statusByNode} running={running} />
+        <RiskChart incidents={incidents} />
+      </section>
+
+      <section>
+        <div className="incidents-header">
+          <h2>Incidents</h2>
+          {incidents.length > 0 && (
+            <div className="report-buttons">
+              <button onClick={() => downloadReport(incidents, 'pdf')}>PDF</button>
+              <button onClick={() => downloadReport(incidents, 'html')}>HTML</button>
+              <button onClick={() => downloadReport(incidents, 'json')}>JSON</button>
+            </div>
+          )}
+        </div>
+        <IncidentsTable incidents={incidents} />
+      </section>
+    </div>
   )
 }
 

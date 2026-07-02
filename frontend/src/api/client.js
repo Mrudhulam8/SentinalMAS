@@ -1,0 +1,56 @@
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+
+export async function uploadLog(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch(`${API_BASE}/api/logs/upload`, { method: 'POST', body: formData })
+  if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+  return res.json()
+}
+
+export async function streamPipeline(entries, onEvent) {
+  const res = await fetch(`${API_BASE}/api/pipeline/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entries }),
+  })
+  if (!res.ok || !res.body) throw new Error(`Pipeline stream failed: ${res.status}`)
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+
+    let boundary
+    while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+      const chunk = buffer.slice(0, boundary)
+      buffer = buffer.slice(boundary + 2)
+      const line = chunk.split('\n').find((l) => l.startsWith('data: '))
+      if (line) {
+        const event = JSON.parse(line.slice(6))
+        onEvent(event)
+      }
+    }
+  }
+}
+
+export async function downloadReport(incidents, format) {
+  const res = await fetch(`${API_BASE}/api/reports/${format}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ incidents }),
+  })
+  if (!res.ok) throw new Error(`Report generation failed: ${res.status}`)
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `secureorch_report.${format === 'json' ? 'json' : format === 'html' ? 'html' : 'pdf'}`
+  a.click()
+  URL.revokeObjectURL(url)
+}
