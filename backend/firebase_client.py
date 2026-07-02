@@ -1,3 +1,4 @@
+import json
 import os
 
 import firebase_admin
@@ -28,18 +29,20 @@ def get_firestore():
     if _client is not None:
         return _client
 
-    has_service_account = os.path.exists(settings.firebase_service_account_path)
-    if not has_service_account and not settings.firebase_project_id:
+    has_json = bool(settings.firebase_service_account_json.strip())
+    has_file = os.path.exists(settings.firebase_service_account_path)
+    if not has_json and not has_file and not settings.firebase_project_id:
         _unavailable = True
         raise FirestoreUnavailable("No Firebase credentials configured")
 
     try:
         if not firebase_admin._apps:
-            cred = (
-                credentials.Certificate(settings.firebase_service_account_path)
-                if has_service_account
-                else credentials.ApplicationDefault()
-            )
+            if has_json:
+                cred = credentials.Certificate(json.loads(settings.firebase_service_account_json))
+            elif has_file:
+                cred = credentials.Certificate(settings.firebase_service_account_path)
+            else:
+                cred = credentials.ApplicationDefault()
             firebase_admin.initialize_app(
                 cred,
                 {"projectId": settings.firebase_project_id} if settings.firebase_project_id else None,

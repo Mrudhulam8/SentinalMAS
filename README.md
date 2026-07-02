@@ -145,6 +145,7 @@ Dashboard runs at `http://localhost:5173`.
 | `POST` | `/api/pipeline/run` | Run the full pipeline synchronously |
 | `POST` | `/api/pipeline/stream` | Run the pipeline, streaming per-agent progress (SSE) |
 | `POST` | `/api/reports/{json,html,pdf}` | Generate an incident report |
+| `GET` | `/api/vulnerability/lookup?keyword=` | CVE/CVSS lookup for a software keyword (NVD) |
 
 ## Configuration
 
@@ -157,6 +158,15 @@ All keys are **optional** (see `.env.example`):
 | `NVD_API_KEY` | Higher NVD CVE rate limit (lookups work without it) |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` / `FIREBASE_PROJECT_ID` | Firestore persistence |
 | `CORS_ORIGINS` | Allowed frontend origins |
+
+## Deployment
+
+For a live prototype — backend on **Render**, frontend on **Vercel**, with
+**Firestore** persistence and all four API integrations wired in — follow the
+step-by-step [docs/deployment.md](docs/deployment.md). Config is already in the
+repo: [`render.yaml`](render.yaml) (backend blueprint) and
+[`frontend/vercel.json`](frontend/vercel.json). All secrets live in the host
+dashboards; nothing sensitive is committed.
 
 ## Testing & performance
 
