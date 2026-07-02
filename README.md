@@ -1,5 +1,7 @@
 # SecureOrch
 
+[![CI](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml)
+
 **Multi-agent AI orchestration framework for intelligent security operations and automated incident response.**
 
 Upload a security log and SecureOrch parses it, detects attacks, enriches findings
