@@ -72,13 +72,29 @@ def check_ip_virustotal(ip: str) -> dict | None:
         return None
 
 
+# Per-IP reputation cache. Many findings share an IP, and the reputation APIs
+# have tight free-tier rate limits (VirusTotal: 4 req/min), so each IP is looked
+# up at most once per process.
+_reputation_cache: dict[str, dict] = {}
+
+
+def _reputation(ip: str) -> dict:
+    if ip not in _reputation_cache:
+        _reputation_cache[ip] = {
+            "abuseipdb": check_ip_abuseipdb(ip),
+            "virustotal": check_ip_virustotal(ip),
+        }
+    return _reputation_cache[ip]
+
+
 def enrich_finding(finding: dict) -> dict:
     """Attach IP reputation + MITRE mapping to a single Log Analysis finding."""
     ip = finding.get("ip")
+    reputation = _reputation(ip) if ip else {"abuseipdb": None, "virustotal": None}
     enrichment = {
         "mitre": map_to_mitre(finding.get("attack_type")),
-        "abuseipdb": check_ip_abuseipdb(ip) if ip else None,
-        "virustotal": check_ip_virustotal(ip) if ip else None,
+        "abuseipdb": reputation["abuseipdb"],
+        "virustotal": reputation["virustotal"],
     }
     return {**finding, "threat_intel": enrichment}
 

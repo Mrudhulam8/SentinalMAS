@@ -120,7 +120,7 @@ def _get_llm():
         return None
     try:
         from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=settings.gemini_api_key)
+        return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.gemini_api_key)
     except Exception:
         logger.warning("Could not initialize Gemini LLM", exc_info=True)
         return None
@@ -142,7 +142,14 @@ def enrich_with_llm(findings: list[dict]) -> list[dict]:
             response = llm.invoke(prompt)
             finding["explanation"] = getattr(response, "content", str(response))
         except Exception:
-            logger.warning("LLM enrichment failed for finding %s", finding["id"], exc_info=True)
+            # A failure here (bad key, denied project, quota) will recur for
+            # every finding, so stop after the first rather than making
+            # hundreds of slow failing calls. Findings keep explanation=None.
+            logger.warning(
+                "LLM enrichment failed for finding %s; skipping LLM for this batch",
+                finding["id"], exc_info=True,
+            )
+            break
 
     return findings
 
