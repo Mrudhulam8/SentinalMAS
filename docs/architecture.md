@@ -4,31 +4,41 @@
 User
   |
   v
-React Dashboard
+React Dashboard  --upload log--> FastAPI Backend
+  |                                   |
+  | <---- SSE per-agent progress -----+
+  v
+Orchestrator Agent (LangGraph pipeline)
+  |
+  v  Log Analysis  ->  Threat Intelligence  ->  Asset Context
+  |
+  v  Correlation  ->  Risk Assessment  ->  Response Recommendation
   |
   v
-FastAPI Backend
+scored incidents
   |
-  v
-Orchestrator Agent (LangGraph)
-  |
-  +-- Log Analysis Agent
-  +-- Threat Intelligence Agent
-  +-- Vulnerability Agent
-  +-- Asset Context Agent
-  |
-  v
-Correlation Agent
-  |
-  v
-Risk Assessment Agent
-  |
-  v
-Response Recommendation Agent
-  |
-  v
-Report Generation Agent
+  +--> Report Agent (on-demand, via /api/reports): JSON / HTML / PDF
+
+Supporting capability (not a pipeline node):
+  Vulnerability Agent -- NVD CVE / CVSS lookup + patch recommendations
 ```
+
+The orchestrator wires **six** nodes in a linear LangGraph:
+`log_analysis → threat_intel → asset_context → correlation → risk_assessment → response`.
+
+The **Report Agent** is invoked on demand when the user requests a report
+(`/api/reports/{json,html,pdf}`), so reports reflect the current incident set
+rather than being pinned to a pipeline run. The **Vulnerability Agent** is a
+standalone enrichment capability (NVD lookups) available to the system but not
+part of the linear log-processing flow.
+
+## Graceful degradation
+
+Every external dependency is optional. With no credentials configured:
+threat-intel lookups return `None`, LLM explanations are skipped, asset context
+falls back to a local seed registry, and Firestore persistence is a no-op. The
+full pipeline and all report formats still run — this is the path exercised by
+the test suite. See [testing-and-performance.md](testing-and-performance.md).
 
 ## Agent Responsibilities
 
