@@ -29,9 +29,13 @@ tables are created automatically on first connection; there's no SQL to run.
 ## 2. Create the database (Supabase)
 
 1. https://supabase.com → **New project** (note the database password you set).
-2. **Project Settings → Database → Connection string → URI**. Copy it; it looks
-   like `postgresql://postgres:PASSWORD@db.PROJECT.supabase.co:5432/postgres`.
+2. Click **Connect** (top bar) → **Session pooler** → copy the URI. It looks
+   like `postgresql://postgres.PROJECT:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres`.
    Substitute your real password. This is your `DATABASE_URL`.
+
+   > ⚠️ Use the **Session pooler** string, not the "Direct connection" one.
+   > Supabase's direct connection is IPv6-only, and Railway is IPv4 — the direct
+   > string will fail to connect. The pooler is IPv4-compatible.
 3. That's it — SecureOrch creates the `logs`, `findings`, `incidents`, and
    `assets` tables automatically on first write.
 
