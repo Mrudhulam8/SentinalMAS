@@ -81,8 +81,14 @@ def _upsert(table: str, key_column: str, rows: list[tuple[str, dict]]) -> bool:
         f"ON CONFLICT ({key_column}) DO UPDATE SET data = EXCLUDED.data"
     )
     try:
-        with _connect() as conn, conn.cursor() as cur:
-            cur.executemany(sql, [(key, Jsonb(data)) for key, data in rows])
+        with _connect() as conn:
+            # Pipeline mode sends all statements without waiting for each
+            # response before the next — without it, executemany does one
+            # round trip per row, which against a remote pooler turns a
+            # 10k-row upload (e.g. one large log file) into ~10s+ of pure
+            # network latency instead of a fraction of a second.
+            with conn.pipeline(), conn.cursor() as cur:
+                cur.executemany(sql, [(key, Jsonb(data)) for key, data in rows])
         return True
     except Exception:
         logger.warning("Persistence unavailable; %s not saved", table, exc_info=True)
@@ -120,3 +126,23 @@ def get_asset_by_ip(ip: str) -> dict | None:
     except Exception:
         logger.debug("Persistence unavailable; asset lookup fell back to seed for %s", ip)
         return None
+
+
+def get_assets_by_ips(ips: list[str]) -> dict[str, dict]:
+    """Batch asset lookup — one round trip for many IPs, not one connection per IP.
+
+    A pipeline run can involve dozens of unique attacker IPs; connect() opens a
+    fresh connection each call (no pooling), so looking those up one at a time
+    means one TCP+TLS+auth handshake per IP — against a remote pooler that's
+    ~1-1.5s each, easily tens of seconds for a single run. A single ANY(...)
+    query avoids that entirely.
+    """
+    if not ips:
+        return {}
+    try:
+        with _connect() as conn, conn.cursor() as cur:
+            cur.execute("SELECT ip, data FROM assets WHERE ip = ANY(%s)", (ips,))
+            return {ip: data for ip, data in cur.fetchall()}
+    except Exception:
+        logger.debug("Persistence unavailable; asset batch lookup fell back to seed", exc_info=True)
+        return {}

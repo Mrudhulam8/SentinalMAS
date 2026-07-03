@@ -8,6 +8,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, wait
 from urllib.parse import unquote
 
 logger = logging.getLogger(__name__)
@@ -126,30 +127,50 @@ def _get_llm():
         return None
 
 
+# A large upload can produce thousands of findings; explaining every one
+# sequentially would block the request for many minutes. Explain only the
+# highest-severity findings, up to a bounded count, fetched concurrently and
+# capped by wall-clock time — mirrors the same bound applied to threat-intel
+# lookups in agents/threat_intel.py, for the same reason.
+MAX_EXPLAINED_FINDINGS_PER_RUN = 20
+TIME_BUDGET_SECONDS = 15.0
+_SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="log-analysis-llm")
+
+
+def _invoke_llm(llm, finding: dict) -> str | None:
+    prompt = (
+        "You are a SOC analyst. In 1-2 sentences, explain the security risk of this finding "
+        "and why it matters, for a non-expert reader.\n"
+        f"Attack type: {finding['attack_type']}\n"
+        f"Evidence: {finding['evidence']}\n"
+    )
+    try:
+        response = llm.invoke(prompt)
+        return getattr(response, "content", str(response))
+    except Exception:
+        logger.warning("LLM enrichment failed for finding %s", finding["id"], exc_info=True)
+        return None
+
+
 def enrich_with_llm(findings: list[dict]) -> list[dict]:
     llm = _get_llm()
-    if llm is None:
+    if llm is None or not findings:
         return findings
 
-    for finding in findings:
-        prompt = (
-            "You are a SOC analyst. In 1-2 sentences, explain the security risk of this finding "
-            "and why it matters, for a non-expert reader.\n"
-            f"Attack type: {finding['attack_type']}\n"
-            f"Evidence: {finding['evidence']}\n"
-        )
-        try:
-            response = llm.invoke(prompt)
-            finding["explanation"] = getattr(response, "content", str(response))
-        except Exception:
-            # A failure here (bad key, denied project, quota) will recur for
-            # every finding, so stop after the first rather than making
-            # hundreds of slow failing calls. Findings keep explanation=None.
-            logger.warning(
-                "LLM enrichment failed for finding %s; skipping LLM for this batch",
-                finding["id"], exc_info=True,
-            )
-            break
+    batch = sorted(findings, key=lambda f: _SEVERITY_ORDER.get(f.get("severity"), 3))
+    batch = batch[:MAX_EXPLAINED_FINDINGS_PER_RUN]
+
+    future_to_finding = {_executor.submit(_invoke_llm, llm, f): f for f in batch}
+    done, not_done = wait(future_to_finding, timeout=TIME_BUDGET_SECONDS)
+
+    for future in done:
+        future_to_finding[future]["explanation"] = future.result()
+    if not_done:
+        # Leftovers keep running in the shared pool but we stop waiting on
+        # them here; those findings simply keep explanation=None this run.
+        logger.info("LLM enrichment budget reached; %d finding(s) left unexplained", len(not_done))
 
     return findings
 
