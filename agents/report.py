@@ -7,8 +7,8 @@ import json
 from datetime import datetime, timezone
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
@@ -86,9 +86,24 @@ th {{ background: #f0f0f0; }}
 </body></html>"""
 
 
+_CELL_STYLE = ParagraphStyle("cell", fontName="Helvetica", fontSize=7.5, leading=9.5)
+_HEADER_STYLE = ParagraphStyle("header", fontName="Helvetica-Bold", fontSize=8, leading=10,
+                                textColor=colors.black)
+
+# Column widths (points) for a landscape letter page with 0.4in margins
+# (usable width ~734pt). Long cells (Attack Types/MITRE/Actions) get most of
+# the room and wrap via Paragraph instead of overflowing off the page.
+_COL_WIDTHS = [42, 60, 34, 82, 160, 140, 196]
+_COL_HEADERS = ["Priority", "Threat\nLevel", "Risk", "IP / User", "Attack Types", "MITRE", "Recommended Actions"]
+
+
 def to_pdf(incidents: list[dict]) -> bytes:
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    margin = 0.4 * 72
+    doc = SimpleDocTemplate(
+        buffer, pagesize=landscape(letter),
+        leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin,
+    )
     styles = getSampleStyleSheet()
     elements = [Paragraph("SecureOrch Incident Report", styles["Title"]), Spacer(1, 12)]
 
@@ -98,26 +113,32 @@ def to_pdf(incidents: list[dict]) -> bytes:
     elements.append(Paragraph(f"Total incidents: {summary['total_incidents']}", styles["Normal"]))
     for level, count in summary["by_threat_level"].items():
         elements.append(Paragraph(f"{level}: {count}", styles["Normal"]))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 14))
 
-    table_data = [["Priority", "Threat Level", "Risk", "IP/User", "Attack Types", "MITRE", "Actions"]]
+    def cell(text: str, style=_CELL_STYLE) -> Paragraph:
+        return Paragraph(str(text), style)
+
+    table_data = [[cell(h, _HEADER_STYLE) for h in _COL_HEADERS]]
     for incident in incidents:
         table_data.append([
-            incident["priority"],
-            incident["threat_level"],
-            str(incident["risk_score"]),
-            incident.get("ip") or incident.get("username") or "-",
-            ", ".join(incident["attack_types"]),
-            ", ".join(sorted({m["technique_id"] for m in incident["mitre_techniques"]})),
-            ", ".join(incident["recommended_actions"]),
+            cell(incident["priority"]),
+            cell(incident["threat_level"]),
+            cell(incident["risk_score"]),
+            cell(incident.get("ip") or incident.get("username") or "-"),
+            cell(", ".join(incident["attack_types"])),
+            cell(", ".join(sorted({m["technique_id"] for m in incident["mitre_techniques"]}))),
+            cell(", ".join(incident["recommended_actions"])),
         ])
 
-    table = Table(table_data, repeatRows=1)
+    table = Table(table_data, colWidths=_COL_WIDTHS, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTSIZE", (0, 0), (-1, -1), 7),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     elements.append(table)
 
