@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    gemini_api_key: str = ""
+    groq_api_key: str = ""
     abuseipdb_api_key: str = ""
     virustotal_api_key: str = ""
     nvd_api_key: str = ""

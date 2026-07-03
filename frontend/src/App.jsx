@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { downloadReport, streamPipeline, uploadLog } from './api/client'
 import PipelineStatus from './components/PipelineStatus'
 import IncidentsTable from './components/IncidentsTable'
+import IncidentDetail from './components/IncidentDetail'
 import RiskChart from './components/RiskChart'
 import './App.css'
 
@@ -12,6 +13,7 @@ function App() {
   const [findingCount, setFindingCount] = useState(0)
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState(null)
+  const [selectedIncident, setSelectedIncident] = useState(null)
   const fileInputRef = useRef(null)
 
   async function handleFileChange(e) {
@@ -23,6 +25,7 @@ function App() {
     setStatusByNode({})
     setIncidents([])
     setFindingCount(0)
+    setSelectedIncident(null)
     setRunning(true)
 
     try {
@@ -103,8 +106,12 @@ function App() {
             </div>
           )}
         </div>
-        <IncidentsTable incidents={incidents} />
+        <IncidentsTable incidents={incidents} onSelect={setSelectedIncident} />
       </section>
+
+      {selectedIncident && (
+        <IncidentDetail incident={selectedIncident} onClose={() => setSelectedIncident(null)} />
+      )}
     </div>
   )
 }

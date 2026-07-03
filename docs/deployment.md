@@ -5,7 +5,7 @@ Stand up a live SecureOrch prototype:
 - **Backend** (FastAPI) → **Railway**
 - **Frontend** (React/Vite) → **Vercel**
 - **Persistence** → **Supabase** (Postgres)
-- **Live enrichment** → Gemini, AbuseIPDB, VirusTotal, NVD
+- **Live enrichment** → Groq (Llama), AbuseIPDB, VirusTotal, NVD
 
 > **Order matters** — the services reference each other's URLs:
 > 1. Get keys → 2. Create Supabase DB → 3. Deploy backend (Railway) →
@@ -21,7 +21,7 @@ tables are created automatically on first connection; there's no SQL to run.
 
 | Service | Where | Notes |
 |---|---|---|
-| Gemini | https://aistudio.google.com/app/apikey | Free tier |
+| Groq | https://console.groq.com/keys | Free tier, fast Llama models |
 | AbuseIPDB | https://www.abuseipdb.com/account/api | Free tier |
 | VirusTotal | https://www.virustotal.com/gui/my-apikey | Free tier |
 | NVD | https://nvd.nist.gov/developers/request-an-api-key | Optional; raises rate limit |
@@ -52,7 +52,7 @@ tables are created automatically on first connection; there's no SQL to run.
    | Variable | Value |
    |---|---|
    | `DATABASE_URL` | from step 2 |
-   | `GEMINI_API_KEY` | from step 1 |
+   | `GROQ_API_KEY` | from step 1 |
    | `ABUSEIPDB_API_KEY` | from step 1 |
    | `VIRUSTOTAL_API_KEY` | from step 1 |
    | `NVD_API_KEY` | from step 1 (optional) |

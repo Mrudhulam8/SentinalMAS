@@ -5,7 +5,7 @@ const LEVEL_CLASS = {
   Low: 'level-low',
 }
 
-export default function IncidentsTable({ incidents }) {
+export default function IncidentsTable({ incidents, onSelect }) {
   if (!incidents.length) {
     return <p className="empty-state">No incidents yet. Upload a log file to run the pipeline.</p>
   }
@@ -25,7 +25,7 @@ export default function IncidentsTable({ incidents }) {
       </thead>
       <tbody>
         {incidents.map((incident) => (
-          <tr key={incident.incident_id}>
+          <tr key={incident.incident_id} className="incident-row" onClick={() => onSelect(incident)}>
             <td>{incident.priority}</td>
             <td>
               <span className={`badge ${LEVEL_CLASS[incident.threat_level] || ''}`}>

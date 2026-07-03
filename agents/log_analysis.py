@@ -1,7 +1,7 @@
 """Log Analysis Agent: detects attack patterns in parsed log entries.
 
 Rule-based detection runs always (deterministic, no external dependency).
-If GEMINI_API_KEY is configured, each finding is additionally enriched with
+If GROQ_API_KEY is configured, each finding is additionally enriched with
 an LLM-generated natural-language explanation.
 """
 import logging
@@ -116,13 +116,13 @@ def detect_patterns(entries: list[dict]) -> list[dict]:
 
 def _get_llm():
     from backend.config import settings
-    if not settings.gemini_api_key:
+    if not settings.groq_api_key:
         return None
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=settings.gemini_api_key)
+        from langchain_groq import ChatGroq
+        return ChatGroq(model="llama-3.1-8b-instant", api_key=settings.groq_api_key)
     except Exception:
-        logger.warning("Could not initialize Gemini LLM", exc_info=True)
+        logger.warning("Could not initialize Groq LLM", exc_info=True)
         return None
 
 

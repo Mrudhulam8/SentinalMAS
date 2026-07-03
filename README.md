@@ -21,7 +21,7 @@ LangGraph agent pipeline with a live React dashboard.
 - **Multi-format log ingestion** — CSV, JSON, Apache access, Linux auth, plain text
 - **Rule-based attack detection** — brute force, failed logins, SQL injection, XSS,
   privilege escalation, port scans, suspicious traffic (deterministic, no LLM needed)
-- **Optional LLM enrichment** — natural-language finding explanations via Gemini
+- **Optional LLM enrichment** — natural-language finding explanations via Groq (Llama)
 - **Threat intel** — IP reputation (AbuseIPDB, VirusTotal) + MITRE ATT&CK mapping
 - **Vulnerability lookup** — CVE/CVSS via NVD with patch recommendations
 - **Risk scoring** — severity + attack diversity + asset criticality + IP reputation → threat level & priority
@@ -64,7 +64,7 @@ node), and the **Vulnerability Agent** is a standalone enrichment capability. Se
 |---|---|
 | Orchestrator | Coordinates the workflow via LangGraph; streams per-node progress |
 | Log Parsing | Normalizes CSV/JSON/Apache/Linux/TXT logs into a common schema |
-| Log Analysis | Detects attack patterns (rules + optional Gemini explanations) |
+| Log Analysis | Detects attack patterns (rules + optional Groq/Llama explanations) |
 | Threat Intelligence | IP/domain reputation (AbuseIPDB, VirusTotal) + MITRE ATT&CK mapping |
 | Asset Context | Business criticality from the `assets` registry table (local seed fallback) |
 | Correlation | Merges related findings into incidents |
@@ -78,7 +78,7 @@ node), and the **Vulnerability Agent** is a standalone enrichment capability. Se
 - **Frontend:** React 19 + Vite, Recharts
 - **Backend:** FastAPI, Uvicorn
 - **Agent orchestration:** LangGraph
-- **LLM:** Gemini (optional)
+- **LLM:** Groq / Llama (optional)
 - **Threat intel:** AbuseIPDB, VirusTotal (optional)
 - **Vulnerability data:** NVD / CVE (works keyless at low rate limit)
 - **Database:** Postgres / Supabase (optional; stateless + local seed fallback)
@@ -155,7 +155,7 @@ All keys are **optional** (see `.env.example`):
 
 | Variable | Enables |
 |---|---|
-| `GEMINI_API_KEY` | LLM explanations on findings |
+| `GROQ_API_KEY` | LLM explanations on findings |
 | `ABUSEIPDB_API_KEY`, `VIRUSTOTAL_API_KEY` | Live IP reputation |
 | `NVD_API_KEY` | Higher NVD CVE rate limit (lookups work without it) |
 | `DATABASE_URL` | Postgres persistence (e.g. Supabase); blank = stateless |
