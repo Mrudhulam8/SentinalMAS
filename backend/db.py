@@ -73,22 +73,40 @@ def _connect():
     return conn
 
 
-def _upsert(table: str, key_column: str, rows: list[tuple[str, dict]]) -> bool:
-    if not rows:
-        return False
+def _copy_insert(conn, table: str, key_column: str, rows: list[tuple[str, dict]]) -> None:
+    """Bulk-load via the COPY protocol: one streamed transfer instead of one
+    round trip per row (or even one per pipelined batch). This is the fast
+    path — thousands of rows in roughly the time of a single query."""
+    with conn.cursor() as cur, cur.copy(f"COPY {table} ({key_column}, data) FROM STDIN") as copy:
+        for key, data in rows:
+            copy.write_row((key, Jsonb(data)))
+
+
+def _upsert_rows(conn, table: str, key_column: str, rows: list[tuple[str, dict]]) -> None:
+    """Slower row-by-row upsert. Used only as a fallback (see _upsert)."""
     sql = (
         f"INSERT INTO {table} ({key_column}, data) VALUES (%s, %s) "
         f"ON CONFLICT ({key_column}) DO UPDATE SET data = EXCLUDED.data"
     )
+    with conn.pipeline(), conn.cursor() as cur:
+        cur.executemany(sql, [(key, Jsonb(data)) for key, data in rows])
+
+
+def _upsert(table: str, key_column: str, rows: list[tuple[str, dict]]) -> bool:
+    if not rows:
+        return False
     try:
         with _connect() as conn:
-            # Pipeline mode sends all statements without waiting for each
-            # response before the next — without it, executemany does one
-            # round trip per row, which against a remote pooler turns a
-            # 10k-row upload (e.g. one large log file) into ~10s+ of pure
-            # network latency instead of a fraction of a second.
-            with conn.pipeline(), conn.cursor() as cur:
-                cur.executemany(sql, [(key, Jsonb(data)) for key, data in rows])
+            try:
+                _copy_insert(conn, table, key_column, rows)
+            except Exception:
+                # COPY has no ON CONFLICT, so it fails outright on a key
+                # collision. Every id here is a freshly generated UUID, so
+                # that should never happen in practice — but if it (or
+                # anything else about the fast path) ever does fail, fall
+                # back to the slower upsert rather than losing the write.
+                conn.rollback()
+                _upsert_rows(conn, table, key_column, rows)
         return True
     except Exception:
         logger.warning("Persistence unavailable; %s not saved", table, exc_info=True)
