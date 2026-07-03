@@ -39,23 +39,42 @@ SQLI_PATHS = ["/products?id=1' OR '1'='1", "/items?id=1 UNION SELECT username,pa
 XSS_PATHS = ["/search?q=<script>alert(1)</script>", "/comment?text=<img src=x onerror=alert(1)>",
              "/page?name=<script>document.cookie</script>"]
 
+# Each attacker IP is restricted to a fixed subset of attack kinds ("profile"),
+# rather than every IP being able to commit all 6 kinds. Risk score is driven
+# by max finding severity + attack-type diversity (capped at 4) + asset
+# criticality + IP reputation -- if every IP can trigger every kind, every
+# incident converges on the same maxed-out score (severity=high, diversity=4,
+# capped at risk 10.0), which is exactly what produced a flat "all Critical"
+# bar chart. Restricting each IP's profile produces a genuine spread across
+# Medium/High/Critical when run through the real risk-assessment formula.
+#
+# Exact scores aren't precisely predictable from a profile alone: some
+# detection rules share signals across kinds (e.g. port_scan and
+# suspicious_traffic both key off HTTP status codes; port_scan's
+# distinct-path counter picks up any kind whose synthetic paths vary, like
+# sqli/xss). That's a real property of the detection engine, not a dataset
+# bug -- diverse attack payloads legitimately can look like scanning. The
+# tiers below are ordered narrow -> broad and roughly Medium -> Critical, but
+# some cross-triggering across nearby tiers is expected and fine.
+_A = ATTACKER_IPS
+IP_PROFILES: dict[str, list[str]] = {
+    **{ip: ["port_scan"] for ip in _A[0:2]},                          # Medium/High
+    **{ip: ["priv_esc"] for ip in _A[2:4]},                           # Medium
+    **{ip: ["server_error"] for ip in _A[4:6]},                       # Medium
+    **{ip: ["brute_force"] for ip in _A[6:8]},                        # High
+    **{ip: ["sqli"] for ip in _A[8:10]},                              # High/Critical
+    **{ip: ["port_scan", "priv_esc"] for ip in _A[10:12]},            # High
+    **{ip: ["brute_force", "sqli"] for ip in _A[12:14]},              # Critical
+    **{ip: ["xss", "port_scan", "priv_esc"] for ip in _A[14:16]},     # Critical
+    **{ip: ["brute_force", "port_scan", "sqli", "xss", "priv_esc", "server_error"]
+       for ip in _A[16:20]},                                          # Critical (10.0, capped)
+}
 
-def _kind(rng: random.Random) -> str:
-    """Weighted attack/benign mix (~45% benign, rest spread across attacks)."""
-    roll = rng.random()
-    if roll < 0.45:
-        return "benign"
-    if roll < 0.65:
-        return "brute_force"
-    if roll < 0.77:
-        return "port_scan"
-    if roll < 0.86:
-        return "sqli"
-    if roll < 0.92:
-        return "xss"
-    if roll < 0.97:
-        return "priv_esc"
-    return "server_error"
+
+def _pick_attack(rng: random.Random) -> tuple[str, str]:
+    """Pick an attacker IP uniformly, then a kind from that IP's profile."""
+    ip = rng.choice(ATTACKER_IPS)
+    return rng.choice(IP_PROFILES[ip]), ip
 
 
 def _records(count: int, seed: int):
@@ -63,27 +82,30 @@ def _records(count: int, seed: int):
     base = datetime(2026, 7, 1, tzinfo=timezone.utc)
     for i in range(count):
         ts = base + timedelta(seconds=i)
-        kind = _kind(rng)
-        if kind == "benign":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(BENIGN_IPS), "user": None,
+        is_benign = rng.random() < 0.45
+        if is_benign:
+            yield {"kind": "benign", "ts": ts, "ip": rng.choice(BENIGN_IPS), "user": None,
                    "method": "GET", "path": rng.choice(BENIGN_PATHS), "status": 200}
-        elif kind == "brute_force":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": rng.choice(USERS),
+            continue
+
+        kind, ip = _pick_attack(rng)
+        if kind == "brute_force":
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": rng.choice(USERS),
                    "method": "POST", "path": "/login", "status": 401}
         elif kind == "port_scan":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": None,
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": None,
                    "method": "GET", "path": rng.choice(SCAN_PATHS), "status": 404}
         elif kind == "sqli":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": None,
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": None,
                    "method": "GET", "path": rng.choice(SQLI_PATHS), "status": 200}
         elif kind == "xss":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": None,
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": None,
                    "method": "GET", "path": rng.choice(XSS_PATHS), "status": 200}
         elif kind == "priv_esc":
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": "root",
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": "root",
                    "method": None, "path": None, "status": None}
         else:  # server_error
-            yield {"kind": kind, "ts": ts, "ip": rng.choice(ATTACKER_IPS), "user": None,
+            yield {"kind": kind, "ts": ts, "ip": ip, "user": None,
                    "method": "POST", "path": "/api/v1/checkout", "status": 500}
 
 
