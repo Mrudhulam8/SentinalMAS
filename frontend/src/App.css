@@ -464,6 +464,12 @@ header p {
   padding-bottom: 1.1rem;
 }
 
+.pipeline-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .pipeline-label {
   display: block;
   font-weight: 600;
@@ -475,6 +481,96 @@ header p {
   margin: 0.2rem 0 0;
   color: var(--text-muted);
   font-size: 0.82rem;
+}
+
+.stage-info-btn {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.stage-info-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stage-info-btn-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stage-reasoning {
+  margin-top: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.78rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.stage-reasoning p {
+  margin: 0 0 0.5rem;
+}
+
+.stage-reasoning p:last-child {
+  margin-bottom: 0;
+}
+
+.reasoning-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.4rem 0 0.5rem;
+  font-size: 0.76rem;
+}
+
+.reasoning-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-muted);
+}
+
+.reasoning-detail-col {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+
+.reasoning-value-col {
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.reasoning-total-row td {
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 700;
+  padding-top: 0.4rem;
+}
+
+.reasoning-band {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.76rem;
 }
 
 /* MITRE badges */

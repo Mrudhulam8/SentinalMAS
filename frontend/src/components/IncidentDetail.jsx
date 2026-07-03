@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { explainStage } from './reasoning'
 
 const SEVERITY_CLASS = { high: 'level-high', medium: 'level-medium', low: 'level-low' }
 const LEVEL_CLASS = { Critical: 'level-critical', High: 'level-high', Medium: 'level-medium', Low: 'level-low' }
@@ -53,6 +54,8 @@ function buildStages(incident) {
 }
 
 export default function IncidentDetail({ incident, onClose }) {
+  const [expandedStage, setExpandedStage] = useState(null)
+
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === 'Escape') onClose()
@@ -60,6 +63,10 @@ export default function IncidentDetail({ incident, onClose }) {
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [onClose])
+
+  useEffect(() => {
+    setExpandedStage(null)
+  }, [incident?.incident_id])
 
   if (!incident) return null
 
@@ -89,18 +96,59 @@ export default function IncidentDetail({ incident, onClose }) {
         <section className="detail-section">
           <h3>What happened</h3>
           <div className="pipeline-diagram">
-            {stages.map((stage) => (
-              <div className="pipeline-stage" key={stage.key}>
-                <div className="pipeline-track">
-                  <span className="pipeline-dot" />
-                  <span className="pipeline-line" />
+            {stages.map((stage) => {
+              const isOpen = expandedStage === stage.key
+              const reasoning = isOpen ? explainStage(stage.key, incident) : null
+              return (
+                <div className="pipeline-stage" key={stage.key}>
+                  <div className="pipeline-track">
+                    <span className="pipeline-dot" />
+                    <span className="pipeline-line" />
+                  </div>
+                  <div className="pipeline-content">
+                    <div className="pipeline-label-row">
+                      <span className="pipeline-label">{stage.label}</span>
+                      <button
+                        className={`stage-info-btn ${isOpen ? 'stage-info-btn-active' : ''}`}
+                        onClick={() => setExpandedStage(isOpen ? null : stage.key)}
+                        aria-label={`Why: ${stage.label}`}
+                        title="Why?"
+                      >
+                        !
+                      </button>
+                    </div>
+                    <p className="pipeline-detail">{stage.detail}</p>
+                    {isOpen && (
+                      <div className="stage-reasoning">
+                        {reasoning.paragraphs.map((p, i) => (
+                          <p key={i}>{p}</p>
+                        ))}
+                        {reasoning.breakdown && (
+                          <>
+                            <table className="reasoning-table">
+                              <tbody>
+                                {reasoning.breakdown.rows.map((r) => (
+                                  <tr key={r.label}>
+                                    <td>{r.label}</td>
+                                    <td className="reasoning-detail-col">{r.detail}</td>
+                                    <td className="reasoning-value-col">{r.value.toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                                <tr className="reasoning-total-row">
+                                  <td colSpan={2}>Total (capped at 10)</td>
+                                  <td className="reasoning-value-col">{reasoning.breakdown.total.toFixed(2)}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <p className="reasoning-band">{reasoning.breakdown.band}</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="pipeline-content">
-                  <span className="pipeline-label">{stage.label}</span>
-                  <p className="pipeline-detail">{stage.detail}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 
