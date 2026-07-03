@@ -42,9 +42,13 @@ publish and never touch real hosts.
 
 ## Note on live threat-intel keys
 
-Detection is keyless and instant. But when AbuseIPDB / VirusTotal keys are
-configured, the Threat Intel agent makes one reputation lookup **per unique IP**,
-and those free tiers are rate-limited (VirusTotal: 4 requests/min). These
-datasets deliberately use a small pool (~20 attacker IPs) to keep enrichment
-bounded, but a large upload can still be slow to fully enrich with live keys.
-For a fast large-scale demo, run without the reputation keys.
+Detection is keyless and instant. When AbuseIPDB / VirusTotal keys are
+configured, the Threat Intel agent looks up reputation **per unique IP**
+(cached, and fetched concurrently per IP) — but those free tiers are
+rate-limited (VirusTotal: 4 requests/min), so a large upload can contain far
+more unique attacker IPs than they can service on demand. Enrichment is
+hard-bounded to at most 25 new IP lookups and 8 seconds of wall time per
+pipeline run, so a large batch can never stall the request — any IPs beyond
+that budget simply proceed without live reputation data (MITRE mapping still
+applies to every finding regardless). These datasets additionally use a small
+pool (~20 attacker IPs) so a single run can fully enrich within the budget.
