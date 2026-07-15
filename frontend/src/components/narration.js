@@ -8,7 +8,11 @@
 
 export const NODE_ORDER = [
   'log_analysis', 'threat_intel', 'asset_context',
+<<<<<<< HEAD
   'correlation', 'risk_assessment', 'response', 'auto_block_alert',
+=======
+  'correlation', 'risk_assessment', 'response',
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 ]
 
 const RUNNING_MESSAGES = {
@@ -23,8 +27,11 @@ const RUNNING_MESSAGES = {
     `Calculating risk scores for ${ctx.incidentsCount.toLocaleString()} incident(s) from severity, diversity, asset criticality, and reputation`,
   response: (ctx) =>
     `Generating recommended mitigation actions for ${ctx.incidentsCount.toLocaleString()} incident(s)`,
+<<<<<<< HEAD
   auto_block_alert: (ctx) =>
     `Blocking attacker IPs and generating alerts for ${ctx.incidentsCount.toLocaleString()} incident(s)`,
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 const COMPLETED_MESSAGES = {
@@ -39,8 +46,11 @@ const COMPLETED_MESSAGES = {
     `Risk-scored ${event.incidents_count.toLocaleString()} incident(s)`,
   response: (event) =>
     `Response playbook ready for all ${event.incidents_count.toLocaleString()} incident(s)`,
+<<<<<<< HEAD
   auto_block_alert: (event) =>
     `Auto-blocked threat IPs and created ${event.incidents_count.toLocaleString()} alert(s)`,
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 export function runningMessage(node, ctx) {

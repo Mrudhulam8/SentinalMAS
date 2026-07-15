@@ -1,6 +1,10 @@
 # Datasets
 
+<<<<<<< HEAD
 Sample security logs for uploading to SentinelMAS.
+=======
+Sample security logs for uploading to SecureOrch.
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 ## Small samples (quick smoke tests)
 

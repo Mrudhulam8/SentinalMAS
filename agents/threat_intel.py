@@ -21,7 +21,10 @@ MITRE_MAPPING = {
     "port_scan": {"technique_id": "T1046", "technique": "Network Service Discovery"},
     "suspicious_traffic": {"technique_id": "T1071", "technique": "Application Layer Protocol"},
     "privilege_escalation": {"technique_id": "T1068", "technique": "Exploitation for Privilege Escalation"},
+<<<<<<< HEAD
     "impossible_travel": {"technique_id": "T1078", "technique": "Valid Accounts"},
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 

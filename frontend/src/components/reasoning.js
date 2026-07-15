@@ -15,7 +15,10 @@ const ATTACK_TYPE_EXPLANATIONS = {
   port_scan: 'the same IP probed 4+ distinct endpoints',
   suspicious_traffic: 'the same IP triggered 3+ server error (4xx/5xx) responses',
   privilege_escalation: 'a privileged command pattern (sudo, usermod, chmod +s) matched the event',
+<<<<<<< HEAD
   impossible_travel: 'the same user authenticated from geographically distant locations within 30 minutes',
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 const SEVERITY_WEIGHT = { low: 1, medium: 2, high: 3 }
@@ -28,7 +31,10 @@ const ATTACK_ACTIONS = {
   port_scan: ['Block IP', 'Notify administrator'],
   suspicious_traffic: ['Block IP', 'Notify administrator'],
   privilege_escalation: ['Disable account', 'Notify administrator', 'Patch vulnerable systems'],
+<<<<<<< HEAD
   impossible_travel: ['Disable account', 'Enable MFA', 'Notify administrator'],
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 const THREAT_LEVEL_EXTRA_ACTIONS = {

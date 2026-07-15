@@ -1,6 +1,10 @@
 # Deployment Guide
 
+<<<<<<< HEAD
 Stand up a live SentinelMAS prototype:
+=======
+Stand up a live SecureOrch prototype:
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 - **Backend** (FastAPI) → **Railway**
 - **Frontend** (React/Vite) → **Vercel**
@@ -36,7 +40,11 @@ tables are created automatically on first connection; there's no SQL to run.
    > ⚠️ Use the **Session pooler** string, not the "Direct connection" one.
    > Supabase's direct connection is IPv6-only, and Railway is IPv4 — the direct
    > string will fail to connect. The pooler is IPv4-compatible.
+<<<<<<< HEAD
 3. That's it — SentinelMAS creates the `logs`, `findings`, `incidents`, and
+=======
+3. That's it — SecureOrch creates the `logs`, `findings`, `incidents`, and
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
    `assets` tables automatically on first write.
 
 > Prefer a different Postgres (Neon, Railway's own Postgres, RDS)? Any of them
@@ -59,7 +67,11 @@ tables are created automatically on first connection; there's no SQL to run.
    | `CORS_ORIGINS` | placeholder for now; set in step 5 |
 
 3. **Settings → Networking → Generate Domain** to get a public URL, e.g.
+<<<<<<< HEAD
    `https://sentinelmas-api.up.railway.app`.
+=======
+   `https://secureorch-api.up.railway.app`.
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 4. Verify: open `https://<your-backend>/api/health` → `{"status":"ok"}`.
 
 ## 4. Deploy the frontend to Vercel
@@ -73,13 +85,21 @@ tables are created automatically on first connection; there's no SQL to run.
    |---|---|
    | `VITE_API_BASE` | your Railway backend URL from step 3 |
 
+<<<<<<< HEAD
 4. Deploy. Note the URL, e.g. `https://sentinelmas.vercel.app`.
+=======
+4. Deploy. Note the URL, e.g. `https://secureorch.vercel.app`.
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 ## 5. Connect them (CORS)
 
 1. Back in Railway → **Variables** → set:
    ```
+<<<<<<< HEAD
    CORS_ORIGINS = https://sentinelmas.vercel.app
+=======
+   CORS_ORIGINS = https://secureorch.vercel.app
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
    ```
    (comma-separate multiple; add `http://localhost:5173` if you also develop
    locally against the deployed backend). Railway redeploys automatically.

@@ -1,10 +1,15 @@
 import { useRef, useState } from 'react'
+<<<<<<< HEAD
 import { downloadReport, streamPipeline, uploadLog, simulateAttack, fetchAlerts } from './api/client'
+=======
+import { downloadReport, streamPipeline, uploadLog } from './api/client'
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 import PipelineStatus from './components/PipelineStatus'
 import IncidentsTable from './components/IncidentsTable'
 import IncidentDetail from './components/IncidentDetail'
 import RiskChart from './components/RiskChart'
 import ActivityLog from './components/ActivityLog'
+<<<<<<< HEAD
 import BlockedIPs from './components/BlockedIPs'
 import AlertToast from './components/AlertToast'
 import AlertPanel from './components/AlertPanel'
@@ -21,6 +26,11 @@ const SCENARIOS = [
   { id: 'impossible_travel', name: 'Impossible Travel', icon: '✈️', desc: 'Login from distant cities' },
 ]
 
+=======
+import { NODE_ORDER, runningMessage, completedMessage, startMessage, doneMessage } from './components/narration'
+import './App.css'
+
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 function App() {
   const [statusByNode, setStatusByNode] = useState({})
   const [running, setRunning] = useState(false)
@@ -30,6 +40,7 @@ function App() {
   const [fileName, setFileName] = useState(null)
   const [selectedIncident, setSelectedIncident] = useState(null)
   const [activityLines, setActivityLines] = useState([])
+<<<<<<< HEAD
   const [selectedScenario, setSelectedScenario] = useState(null)
   const [simCount, setSimCount] = useState(100)
   const [alerts, setAlerts] = useState([])
@@ -39,6 +50,8 @@ function App() {
   const [isSimulating, setIsSimulating] = useState(false)
   const [blockedCount, setBlockedCount] = useState(0)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   const fileInputRef = useRef(null)
   const startTimeRef = useRef(0)
 
@@ -47,10 +60,20 @@ function App() {
     return { id, kind, text }
   }
 
+<<<<<<< HEAD
+=======
+  // Adds one or more lines as a single state update. Batching matters here:
+  // a stage's "completed" and the next stage's "running" line are produced
+  // together in the same tick, and issuing them as separate setState calls
+  // (each spreading the same stale `prev`) is the kind of pattern React 18
+  // StrictMode's dev-only double-render flags with spurious duplicate-key
+  // warnings, even though the final committed state is correct either way.
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   function addLines(...lines) {
     setActivityLines((prev) => [...prev, ...lines])
   }
 
+<<<<<<< HEAD
   function handlePipelineEvent(event, entries) {
     if (event.node === 'done') {
       const elapsed = (performance.now() - startTimeRef.current) / 1000
@@ -109,6 +132,8 @@ function App() {
     handlePipelineEvent(event, [])
   }
 
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   async function handleFileChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -132,7 +157,34 @@ function App() {
         makeLine('running', runningMessage(NODE_ORDER[0], { entryCount: entries.length, findingsCount: 0, incidentsCount: 0 })),
       )
 
+<<<<<<< HEAD
       await streamPipeline(entries, (event) => handlePipelineEvent(event, entries))
+=======
+      await streamPipeline(entries, (event) => {
+        if (event.node === 'done') {
+          const elapsed = (performance.now() - startTimeRef.current) / 1000
+          addLines(makeLine('success', doneMessage(event.result.incidents, elapsed)))
+          setIncidents(event.result.incidents)
+          setFindingCount(event.result.findings.length)
+          setRunning(false)
+          return
+        }
+
+        setStatusByNode((prev) => ({ ...prev, [event.node]: event.status }))
+        setFindingCount(event.findings_count ?? 0)
+
+        const newLines = [makeLine('success', completedMessage(event.node, event))]
+        const nextIndex = NODE_ORDER.indexOf(event.node) + 1
+        if (nextIndex < NODE_ORDER.length) {
+          newLines.push(makeLine('running', runningMessage(NODE_ORDER[nextIndex], {
+            entryCount: entries.length,
+            findingsCount: event.findings_count,
+            incidentsCount: event.incidents_count,
+          })))
+        }
+        addLines(...newLines)
+      })
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
     } catch (err) {
       setError(err.message)
       setRunning(false)
@@ -141,6 +193,7 @@ function App() {
     }
   }
 
+<<<<<<< HEAD
   async function handleSimulate() {
     if (!selectedScenario || running) return
 
@@ -196,11 +249,22 @@ function App() {
           </div>
         </div>
         <p>MULTI-AGENT INTELLIGENCE CONSTRUCT</p>
+=======
+  return (
+    <div className="app">
+      <header>
+        <h1>SecureOrch</h1>
+        <p>Multi-Agent AI Security Operations Center</p>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
       </header>
 
       <section className="upload-panel">
         <label className="upload-button">
+<<<<<<< HEAD
           {running ? '[ PROCESSING_INGEST ]' : '[ INITIALIZE_INGEST ] (CSV / JSON / LOG)'}
+=======
+          {running ? 'Processing…' : 'Upload security log (CSV / JSON / TXT / Apache / Linux)'}
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
           <input
             ref={fileInputRef}
             type="file"
@@ -214,6 +278,7 @@ function App() {
         {error && <p className="error">{error}</p>}
       </section>
 
+<<<<<<< HEAD
       {simPanelOpen && (
         <div className="sim-overlay" onClick={() => setSimPanelOpen(false)}>
           <div className="sim-panel-modal" onClick={(e) => e.stopPropagation()}>
@@ -274,11 +339,22 @@ function App() {
         <div className="summary-card">
           <span className="summary-value">{incidents.length}</span>
           <span className="summary-label">SYS.INCIDENTS</span>
+=======
+      <section className="summary-bar">
+        <div className="summary-card">
+          <span className="summary-value">{findingCount}</span>
+          <span className="summary-label">Findings</span>
+        </div>
+        <div className="summary-card">
+          <span className="summary-value">{incidents.length}</span>
+          <span className="summary-label">Incidents</span>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
         </div>
         <div className="summary-card">
           <span className="summary-value">
             {incidents.filter((i) => i.threat_level === 'Critical').length}
           </span>
+<<<<<<< HEAD
           <span className="summary-label">SYS.CRITICAL</span>
         </div>
         <div className="summary-card">
@@ -286,6 +362,9 @@ function App() {
             {blockedCount}
           </span>
           <span className="summary-label">SYS.BLOCKED</span>
+=======
+          <span className="summary-label">Critical</span>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
         </div>
       </section>
 
@@ -296,11 +375,17 @@ function App() {
         <RiskChart incidents={incidents} />
       </section>
 
+<<<<<<< HEAD
       <BlockedIPs refreshTrigger={refreshTrigger} onBlockedCountChange={setBlockedCount} />
 
       <section>
         <div className="incidents-header">
           <h2>[ SYS.INCIDENTS_DB ]</h2>
+=======
+      <section>
+        <div className="incidents-header">
+          <h2>Incidents</h2>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
           {incidents.length > 0 && (
             <div className="report-buttons">
               <button onClick={() => downloadReport(incidents, 'pdf')}>PDF</button>
@@ -315,6 +400,7 @@ function App() {
       {selectedIncident && (
         <IncidentDetail incident={selectedIncident} onClose={() => setSelectedIncident(null)} />
       )}
+<<<<<<< HEAD
 
       <AlertToast alerts={alerts} />
       <AlertPanel
@@ -323,6 +409,8 @@ function App() {
         refreshTrigger={refreshTrigger}
         onAlertsUpdated={setAlerts}
       />
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
     </div>
   )
 }

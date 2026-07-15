@@ -2,6 +2,7 @@
   color-scheme: dark;
 
   /* Surfaces */
+<<<<<<< HEAD
   --bg: #000000;
   --panel: #000000;
   --panel-2: #050505;
@@ -27,6 +28,32 @@
   /* Typography */
   --sans: 'Chakra Petch', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
+=======
+  --bg: #0b0e14;
+  --panel: #141924;
+  --panel-2: #1a2130;
+  --border: #232c3d;
+  --border-soft: #1b2231;
+
+  /* Text */
+  --text: #e6edf3;
+  --text-muted: #8b95a7;
+  --text-dim: #5c6675;
+
+  /* Accent */
+  --accent: #5ea0ff;
+  --accent-2: #7c5cff;
+  --accent-glow: rgba(94, 160, 255, 0.28);
+
+  /* Threat levels (tuned for dark backgrounds) */
+  --crit: #ff5d6c;  --crit-bg: rgba(255, 93, 108, 0.14);  --crit-bd: rgba(255, 93, 108, 0.45);
+  --high: #ff9e4a;  --high-bg: rgba(255, 158, 74, 0.14);  --high-bd: rgba(255, 158, 74, 0.45);
+  --med:  #ffcf5c;  --med-bg:  rgba(255, 207, 92, 0.14);  --med-bd:  rgba(255, 207, 92, 0.42);
+  --low:  #4ade80;  --low-bg:  rgba(74, 222, 128, 0.14);  --low-bd:  rgba(74, 222, 128, 0.4);
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
   font-family: var(--sans);
   color: var(--text);
@@ -37,13 +64,17 @@
 
 * {
   box-sizing: border-box;
+<<<<<<< HEAD
   /* Brutalist override: zero border-radius everywhere */
   border-radius: 0 !important;
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+<<<<<<< HEAD
   background-color: var(--bg);
   /* 1px terminal grid */
   background-image: 
@@ -51,6 +82,13 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 32px 32px;
   background-position: center top;
+=======
+  background:
+    radial-gradient(1100px 560px at 15% -10%, rgba(124, 92, 255, 0.12), transparent 60%),
+    radial-gradient(950px 480px at 100% 0%, rgba(94, 160, 255, 0.09), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   color: var(--text);
 }
 

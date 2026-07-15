@@ -50,6 +50,7 @@ export async function downloadReport(incidents, format) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
+<<<<<<< HEAD
   a.download = `sentinelmas_report.${format === 'json' ? 'json' : format === 'html' ? 'html' : 'pdf'}`
   a.click()
   URL.revokeObjectURL(url)
@@ -123,3 +124,9 @@ export async function acknowledgeAllAlerts() {
   if (!res.ok) throw new Error(`Acknowledge all failed: ${res.status}`)
   return res.json()
 }
+=======
+  a.download = `secureorch_report.${format === 'json' ? 'json' : format === 'html' ? 'html' : 'pdf'}`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70

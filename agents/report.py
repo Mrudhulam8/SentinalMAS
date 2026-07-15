@@ -62,7 +62,11 @@ def to_html(incidents: list[dict]) -> str:
     )
     summary = data["executive_summary"]
     return f"""<!DOCTYPE html>
+<<<<<<< HEAD
 <html><head><meta charset="utf-8"><title>SentinelMAS Incident Report</title>
+=======
+<html><head><meta charset="utf-8"><title>SecureOrch Incident Report</title>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 <style>
 body {{ font-family: sans-serif; margin: 2rem; }}
 table {{ border-collapse: collapse; width: 100%; margin-top: 1rem; }}
@@ -70,7 +74,11 @@ th, td {{ border: 1px solid #ccc; padding: 6px 10px; text-align: left; font-size
 th {{ background: #f0f0f0; }}
 </style></head>
 <body>
+<<<<<<< HEAD
 <h1>SentinelMAS Incident Report</h1>
+=======
+<h1>SecureOrch Incident Report</h1>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 <p>Generated: {summary['generated_at']}</p>
 <h2>Executive Summary</h2>
 <p>Total incidents: {summary['total_incidents']}</p>
@@ -105,7 +113,11 @@ def to_pdf(incidents: list[dict]) -> bytes:
         leftMargin=margin, rightMargin=margin, topMargin=margin, bottomMargin=margin,
     )
     styles = getSampleStyleSheet()
+<<<<<<< HEAD
     elements = [Paragraph("SentinelMAS Incident Report", styles["Title"]), Spacer(1, 12)]
+=======
+    elements = [Paragraph("SecureOrch Incident Report", styles["Title"]), Spacer(1, 12)]
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
     data = build_report_data(incidents)
     summary = data["executive_summary"]

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # SentinelMAS Architecture
+=======
+# SecureOrch Architecture
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 ```
 User

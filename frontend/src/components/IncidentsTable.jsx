@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 import { useMemo, useState } from 'react'
 
+=======
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 const LEVEL_CLASS = {
   Critical: 'level-critical',
   High: 'level-high',
@@ -7,6 +10,7 @@ const LEVEL_CLASS = {
   Low: 'level-low',
 }
 
+<<<<<<< HEAD
 const SEVERITY_ORDER = { Critical: 0, High: 1, Medium: 2, Low: 3 }
 
 const FILTER_OPTIONS = ['All', 'Critical', 'High', 'Medium', 'Low']
@@ -24,11 +28,15 @@ export default function IncidentsTable({ incidents, onSelect }) {
     return sorted.filter((i) => i.threat_level === activeFilter)
   }, [incidents, activeFilter])
 
+=======
+export default function IncidentsTable({ incidents, onSelect }) {
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   if (!incidents.length) {
     return <p className="empty-state">No incidents yet. Upload a log file to run the pipeline.</p>
   }
 
   return (
+<<<<<<< HEAD
     <div>
       <div className="filter-bar">
         {FILTER_OPTIONS.map((level) => (
@@ -92,5 +100,39 @@ export default function IncidentsTable({ incidents, onSelect }) {
         </tbody>
       </table>
     </div>
+=======
+    <table className="incidents-table">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Threat Level</th>
+          <th>Risk Score</th>
+          <th>IP / User</th>
+          <th>Attack Types</th>
+          <th>MITRE</th>
+          <th>Recommended Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {incidents.map((incident) => (
+          <tr key={incident.incident_id} className="incident-row" onClick={() => onSelect(incident)}>
+            <td>{incident.priority}</td>
+            <td>
+              <span className={`badge ${LEVEL_CLASS[incident.threat_level] || ''}`}>
+                {incident.threat_level}
+              </span>
+            </td>
+            <td>{incident.risk_score}</td>
+            <td>{incident.ip || incident.username || '—'}</td>
+            <td>{incident.attack_types.join(', ')}</td>
+            <td>
+              {[...new Set(incident.mitre_techniques.map((m) => m.technique_id))].join(', ')}
+            </td>
+            <td>{incident.recommended_actions.join(', ')}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
   )
 }
