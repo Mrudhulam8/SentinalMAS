@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Testing / performance validation (Phase 6)
+pytest==9.1.1

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+node_modules/
+frontend/dist/
+*.log
+# ...but keep the sample/generated dataset logs
+!datasets/*.log
+.DS_Store
