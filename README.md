@@ -1,18 +1,9 @@
-<<<<<<< HEAD
 # SentinelMAS
 =======
-# SecureOrch
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
-
-[![CI](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml)
 
 **Multi-agent AI orchestration framework for intelligent security operations and automated incident response.**
 
-<<<<<<< HEAD
 Upload a security log and SentinelMAS parses it, detects attacks, enriches findings
-=======
-Upload a security log and SecureOrch parses it, detects attacks, enriches findings
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 with threat intelligence and asset context, correlates them into incidents, scores
 risk, recommends mitigations, and produces a downloadable report — coordinated by a
 LangGraph agent pipeline with a live React dashboard.
