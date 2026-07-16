@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 # SentinelMAS
-
-[![CI](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml/badge.svg)](https://github.com/Mrudhulam8/SentinalMAS/actions/workflows/ci.yml)
 
 **Multi-agent AI orchestration framework for intelligent security operations and automated incident response.**
 
