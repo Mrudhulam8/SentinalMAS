@@ -1,10 +1,6 @@
 """Generate large, attack-rich security logs in uploadable formats.
 
-<<<<<<< HEAD
 Produces realistic logs the SentinelMAS parser understands (Apache access,
-=======
-Produces realistic logs the SecureOrch parser understands (Apache access,
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 Linux auth, CSV, JSON) with an attack mix tuned to trigger every Log Analysis
 detection rule: brute force, failed login, SQL injection, XSS, privilege
 escalation, port scan, and suspicious (4xx/5xx) traffic.

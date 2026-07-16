@@ -94,11 +94,7 @@ export default function IncidentDetail({ incident, onClose }) {
         </div>
 
         <section className="detail-section">
-<<<<<<< HEAD
           <h3>[ SYS.TIMELINE ]</h3>
-=======
-          <h3>What happened</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
           <div className="pipeline-diagram">
             {stages.map((stage) => {
               const isOpen = expandedStage === stage.key
@@ -158,11 +154,7 @@ export default function IncidentDetail({ incident, onClose }) {
 
         {uniqueMitre.length > 0 && (
           <section className="detail-section">
-<<<<<<< HEAD
             <h3>[ SYS.MITRE_ATTACK ]</h3>
-=======
-            <h3>MITRE ATT&CK</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
             <div className="mitre-badges">
               {uniqueMitre.map((m) => (
                 <span className="mitre-badge" key={m.technique_id}>
@@ -174,11 +166,7 @@ export default function IncidentDetail({ incident, onClose }) {
         )}
 
         <section className="detail-section">
-<<<<<<< HEAD
           <h3>[ SYS.EVIDENCE // {incident.findings.length} ]</h3>
-=======
-          <h3>Evidence ({incident.findings.length})</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
           <ul className="evidence-list">
             {incident.findings.map((f) => (
               <li key={f.id} className="evidence-item">
@@ -197,11 +185,7 @@ export default function IncidentDetail({ incident, onClose }) {
 
         {incident.asset_context && (
           <section className="detail-section">
-<<<<<<< HEAD
             <h3>[ SYS.ASSET_CONTEXT ]</h3>
-=======
-            <h3>Asset Context</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
             <div className="asset-card">
               <div>
                 <span className="asset-label">Asset</span>
@@ -228,11 +212,7 @@ export default function IncidentDetail({ incident, onClose }) {
         )}
 
         <section className="detail-section">
-<<<<<<< HEAD
           <h3>[ SYS.RECOMMENDATIONS ]</h3>
-=======
-          <h3>Recommended Actions</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
           <ul className="actions-list">
             {incident.recommended_actions.map((action) => (
               <li key={action}>{action}</li>

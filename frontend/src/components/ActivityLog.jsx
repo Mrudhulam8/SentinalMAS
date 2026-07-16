@@ -13,11 +13,7 @@ export default function ActivityLog({ lines, running }) {
   return (
     <section className="activity-log">
       <h3>
-<<<<<<< HEAD
         [ SYS.ACTIVITY_LOG ] {running && <span className="live-dot" />}
-=======
-        Live Activity {running && <span className="live-dot" />}
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
       </h3>
       <div className="activity-log-scroll" ref={scrollRef}>
         {lines.map((line) => (

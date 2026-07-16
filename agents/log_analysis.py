@@ -8,10 +8,7 @@ import logging
 import re
 import uuid
 from collections import defaultdict
-<<<<<<< HEAD
 from datetime import datetime, timedelta
-=======
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 from concurrent.futures import ThreadPoolExecutor, wait
 from urllib.parse import unquote
 
@@ -28,10 +25,7 @@ PRIV_ESC_RE = re.compile(r"\bsudo\b|user=root|usermod|setuid|chmod\s+\+s", re.IG
 BRUTE_FORCE_THRESHOLD = 3
 SCAN_DISTINCT_PATH_THRESHOLD = 4
 SUSPICIOUS_ERROR_THRESHOLD = 3
-<<<<<<< HEAD
 IMPOSSIBLE_TRAVEL_WINDOW_MINUTES = 30
-=======
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 
 def _new_finding(attack_type: str, entry_ids: list[str], ip: str | None, username: str | None,
@@ -120,7 +114,6 @@ def detect_patterns(entries: list[dict]) -> list[dict]:
                 f"{len(errs)} error responses (4xx/5xx) from ip={ip!r} in this batch",
             ))
 
-<<<<<<< HEAD
     # --- Impossible travel detection ---
     logins_by_user: dict[str, list[dict]] = defaultdict(list)
     for entry in entries:
@@ -157,8 +150,6 @@ def detect_patterns(entries: list[dict]) -> list[dict]:
                         f"{curr_geo.get('country', '?')} within {delta:.0f} minutes",
                     ))
 
-=======
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
     return findings
 
 

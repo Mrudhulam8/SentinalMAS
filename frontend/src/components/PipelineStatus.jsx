@@ -5,10 +5,7 @@ const NODE_LABELS = {
   correlation: 'Correlation Agent',
   risk_assessment: 'Risk Assessment Agent',
   response: 'Response Recommendation Agent',
-<<<<<<< HEAD
   auto_block_alert: 'Auto-Block & Alert Agent',
-=======
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 }
 
 const NODE_ORDER = Object.keys(NODE_LABELS)
@@ -16,11 +13,7 @@ const NODE_ORDER = Object.keys(NODE_LABELS)
 export default function PipelineStatus({ statusByNode, running }) {
   return (
     <div className="pipeline-status">
-<<<<<<< HEAD
       <h3>[ SYS.AGENT_STATUS ] {running && <span className="live-dot" />}</h3>
-=======
-      <h3>Agent Execution Status {running && <span className="live-dot" />}</h3>
->>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
       <ol>
         {NODE_ORDER.map((node) => {
           const status = statusByNode[node] || 'pending'
