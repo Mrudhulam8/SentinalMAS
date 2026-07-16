@@ -1,13 +1,15 @@
 """Log Analysis Agent: detects attack patterns in parsed log entries.
 
 Rule-based detection runs always (deterministic, no external dependency).
-If GEMINI_API_KEY is configured, each finding is additionally enriched with
+If GROQ_API_KEY is configured, each finding is additionally enriched with
 an LLM-generated natural-language explanation.
 """
 import logging
 import re
 import uuid
 from collections import defaultdict
+from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, wait
 from urllib.parse import unquote
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ PRIV_ESC_RE = re.compile(r"\bsudo\b|user=root|usermod|setuid|chmod\s+\+s", re.IG
 BRUTE_FORCE_THRESHOLD = 3
 SCAN_DISTINCT_PATH_THRESHOLD = 4
 SUSPICIOUS_ERROR_THRESHOLD = 3
+IMPOSSIBLE_TRAVEL_WINDOW_MINUTES = 30
 
 
 def _new_finding(attack_type: str, entry_ids: list[str], ip: str | None, username: str | None,
@@ -111,38 +114,101 @@ def detect_patterns(entries: list[dict]) -> list[dict]:
                 f"{len(errs)} error responses (4xx/5xx) from ip={ip!r} in this batch",
             ))
 
+    # --- Impossible travel detection ---
+    logins_by_user: dict[str, list[dict]] = defaultdict(list)
+    for entry in entries:
+        event = entry.get("event") or ""
+        username = entry.get("username")
+        geo = entry.get("geo_location")
+        if username and geo and "Accepted" in event:
+            logins_by_user[username].append(entry)
+
+    for username, logins in logins_by_user.items():
+        sorted_logins = sorted(logins, key=lambda e: e.get("timestamp", ""))
+        for i in range(1, len(sorted_logins)):
+            prev = sorted_logins[i - 1]
+            curr = sorted_logins[i]
+            prev_geo = prev.get("geo_location", {})
+            curr_geo = curr.get("geo_location", {})
+            if prev_geo.get("city") != curr_geo.get("city"):
+                try:
+                    t1 = datetime.fromisoformat(prev["timestamp"])
+                    t2 = datetime.fromisoformat(curr["timestamp"])
+                    delta = abs((t2 - t1).total_seconds()) / 60
+                except (ValueError, TypeError):
+                    continue
+                if delta <= IMPOSSIBLE_TRAVEL_WINDOW_MINUTES:
+                    findings.append(_new_finding(
+                        "impossible_travel",
+                        [prev["id"], curr["id"]],
+                        curr.get("ip"),
+                        username,
+                        "high",
+                        0.9,
+                        f"User {username!r} logged in from {prev_geo.get('city', '?')}, "
+                        f"{prev_geo.get('country', '?')} then {curr_geo.get('city', '?')}, "
+                        f"{curr_geo.get('country', '?')} within {delta:.0f} minutes",
+                    ))
+
     return findings
 
 
 def _get_llm():
     from backend.config import settings
-    if not settings.gemini_api_key:
+    if not settings.groq_api_key:
         return None
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=settings.gemini_api_key)
+        from langchain_groq import ChatGroq
+        return ChatGroq(model="llama-3.1-8b-instant", api_key=settings.groq_api_key)
     except Exception:
-        logger.warning("Could not initialize Gemini LLM", exc_info=True)
+        logger.warning("Could not initialize Groq LLM", exc_info=True)
+        return None
+
+
+# A large upload can produce thousands of findings; explaining every one
+# sequentially would block the request for many minutes. Explain only the
+# highest-severity findings, up to a bounded count, fetched concurrently and
+# capped by wall-clock time — mirrors the same bound applied to threat-intel
+# lookups in agents/threat_intel.py, for the same reason.
+MAX_EXPLAINED_FINDINGS_PER_RUN = 20
+TIME_BUDGET_SECONDS = 15.0
+_SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="log-analysis-llm")
+
+
+def _invoke_llm(llm, finding: dict) -> str | None:
+    prompt = (
+        "You are a SOC analyst. In 1-2 sentences, explain the security risk of this finding "
+        "and why it matters, for a non-expert reader.\n"
+        f"Attack type: {finding['attack_type']}\n"
+        f"Evidence: {finding['evidence']}\n"
+    )
+    try:
+        response = llm.invoke(prompt)
+        return getattr(response, "content", str(response))
+    except Exception:
+        logger.warning("LLM enrichment failed for finding %s", finding["id"], exc_info=True)
         return None
 
 
 def enrich_with_llm(findings: list[dict]) -> list[dict]:
     llm = _get_llm()
-    if llm is None:
+    if llm is None or not findings:
         return findings
 
-    for finding in findings:
-        prompt = (
-            "You are a SOC analyst. In 1-2 sentences, explain the security risk of this finding "
-            "and why it matters, for a non-expert reader.\n"
-            f"Attack type: {finding['attack_type']}\n"
-            f"Evidence: {finding['evidence']}\n"
-        )
-        try:
-            response = llm.invoke(prompt)
-            finding["explanation"] = getattr(response, "content", str(response))
-        except Exception:
-            logger.warning("LLM enrichment failed for finding %s", finding["id"], exc_info=True)
+    batch = sorted(findings, key=lambda f: _SEVERITY_ORDER.get(f.get("severity"), 3))
+    batch = batch[:MAX_EXPLAINED_FINDINGS_PER_RUN]
+
+    future_to_finding = {_executor.submit(_invoke_llm, llm, f): f for f in batch}
+    done, not_done = wait(future_to_finding, timeout=TIME_BUDGET_SECONDS)
+
+    for future in done:
+        future_to_finding[future]["explanation"] = future.result()
+    if not_done:
+        # Leftovers keep running in the shared pool but we stop waiting on
+        # them here; those findings simply keep explanation=None this run.
+        logger.info("LLM enrichment budget reached; %d finding(s) left unexplained", len(not_done))
 
     return findings
 

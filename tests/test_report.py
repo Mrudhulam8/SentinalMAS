@@ -23,7 +23,11 @@ def test_html_report_contains_table_and_summary():
     html = report.to_html(_incidents())
     assert "<table>" in html
     assert "Executive Summary" in html
+<<<<<<< HEAD
+    assert "SentinelMAS Incident Report" in html
+=======
     assert "SecureOrch Incident Report" in html
+>>>>>>> 4e42fe27b608da871312434e17e16aaee9671e70
 
 
 def test_pdf_report_has_valid_header():

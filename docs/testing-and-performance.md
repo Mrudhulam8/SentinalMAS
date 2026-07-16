@@ -8,7 +8,7 @@ pytest                 # full suite (unit + integration + performance)
 pytest -m perf -s      # performance benchmarks only, with timing output
 ```
 
-The whole suite runs **offline** — no API keys, no Firebase. The pipeline is
+The whole suite runs **offline** — no API keys, no database. The pipeline is
 designed to degrade gracefully to local seed data when credentials are absent,
 which is the exact path the tests exercise.
 
@@ -21,6 +21,7 @@ which is the exact path the tests exercise.
 | `tests/test_pipeline.py` | Orchestrator (integration) | end-to-end scoring, risk-band ↔ threat-level consistency, recommended actions, SSE streaming events, empty input |
 | `tests/test_report.py` | Report Generation Agent | valid JSON structure, HTML table/summary, PDF header, empty-incident handling |
 | `tests/test_performance.py` | Performance | **10k logs < 60s**, roughly-linear scaling (no quadratic blowup) |
+| `tests/test_persistence.py` | Postgres (opt-in) | save/list/upsert round-trips; skipped unless `TEST_DATABASE_URL` is set |
 | `tests/synthetic.py` | Fixtures | deterministic, seeded, attack-rich synthetic log generator |
 
 Current status: **25 tests passing**.
@@ -48,17 +49,16 @@ guaranteed SLA. Re-run locally with `pytest -m perf -s`.
 The first 10k-log benchmark did not complete (hung for minutes). Profiling
 isolated it to the Asset Context stage:
 
-- `get_firestore()` cached the Firebase *app* but not a *failed* connection, so
-  every call re-ran the blocking Application-Default-Credentials probe
-  (~13s each when unconfigured). With 1,618 findings this was effectively
-  unbounded.
-- `asset_context` looked up Firestore once **per finding** rather than per
+- The persistence client cached the *connection* but not a *failed* connection,
+  so every call re-ran the blocking credential/connection probe (~13s each when
+  unconfigured). With 1,618 findings this was effectively unbounded.
+- `asset_context` looked up the datastore once **per finding** rather than per
   **unique IP** (~1,600 lookups for ~20 distinct IPs).
 
-Fixes:
-- `backend/firebase_client.py` now fast-fails when no credentials are
-  configured and caches the unavailable state (raises `FirestoreUnavailable`),
-  so the slow probe happens at most once.
+Fixes (the pattern carried over when persistence moved from Firestore to
+Postgres in `backend/db.py`):
+- The persistence layer fast-fails when no database is configured and caches the
+  unavailable state, so the slow probe happens at most once.
 - `agents/asset_context.py` memoizes lookups per IP.
 
 Result: 10k-log run went from *not completing* to **0.16s**.

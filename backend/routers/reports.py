@@ -27,5 +27,5 @@ def report_pdf(request: ReportRequest):
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=secureorch_report.pdf"},
+        headers={"Content-Disposition": "attachment; filename=sentinelmas_report.pdf"},
     )

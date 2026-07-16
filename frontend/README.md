@@ -1,6 +1,7 @@
-# SecureOrch Dashboard
+# SentinelMAS Dashboard
 
-React + Vite frontend for SecureOrch — uploads a security log, streams live
+React + Vite frontend for SentinelMAS — uploads a security log, streams live
+
 per-agent pipeline progress over SSE, and renders incidents, a risk chart, and
 one-click PDF/HTML/JSON report downloads.
 

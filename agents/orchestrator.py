@@ -1,4 +1,4 @@
-"""Orchestrator Agent: LangGraph pipeline wiring all SecureOrch agents together.
+"""Orchestrator Agent: LangGraph pipeline wiring all SentinelMAS agents together.
 
 Flow:
   entries -> Log Analysis -> Threat Intelligence -> Asset Context
@@ -14,6 +14,8 @@ from agents.log_analysis import analyze
 from agents.response import recommend_responses
 from agents.risk_assessment import assess_risks
 from agents.threat_intel import enrich_findings as threat_intel_enrich
+from backend.blocklist import blocklist_manager
+from backend.alerting import alert_manager
 
 
 class PipelineState(TypedDict, total=False):
@@ -46,6 +48,28 @@ def response_node(state: PipelineState) -> PipelineState:
     return {"incidents": recommend_responses(state["incidents"])}
 
 
+def auto_block_alert_node(state: PipelineState) -> PipelineState:
+    """Auto-block attacker IPs and create alerts for High/Critical incidents."""
+    incidents = state["incidents"]
+    updated = []
+    for incident in incidents:
+        threat_level = incident.get("threat_level", "")
+        ip = incident.get("ip")
+        blocked = False
+        if ip and threat_level in ("High", "Critical"):
+            attack_str = ", ".join(incident.get("attack_types", []))
+            blocklist_manager.block(
+                ip=ip,
+                reason=attack_str,
+                threat_level=threat_level,
+                incident_id=incident.get("incident_id", ""),
+            )
+            blocked = True
+        alert_manager.create_alert(incident, blocked=blocked)
+        updated.append({**incident, "blocked": blocked})
+    return {"incidents": updated}
+
+
 def build_graph():
     graph = StateGraph(PipelineState)
     graph.add_node("log_analysis", log_analysis_node)
@@ -54,6 +78,7 @@ def build_graph():
     graph.add_node("correlation", correlation_node)
     graph.add_node("risk_assessment", risk_assessment_node)
     graph.add_node("response", response_node)
+    graph.add_node("auto_block_alert", auto_block_alert_node)
 
     graph.add_edge(START, "log_analysis")
     graph.add_edge("log_analysis", "threat_intel")
@@ -61,7 +86,8 @@ def build_graph():
     graph.add_edge("asset_context", "correlation")
     graph.add_edge("correlation", "risk_assessment")
     graph.add_edge("risk_assessment", "response")
-    graph.add_edge("response", END)
+    graph.add_edge("response", "auto_block_alert")
+    graph.add_edge("auto_block_alert", END)
 
     return graph.compile()
 
@@ -87,7 +113,7 @@ def run_pipeline(entries: list[dict]) -> dict:
 
 NODE_ORDER = [
     "log_analysis", "threat_intel", "asset_context",
-    "correlation", "risk_assessment", "response",
+    "correlation", "risk_assessment", "response", "auto_block_alert",
 ]
 
 

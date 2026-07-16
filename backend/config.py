@@ -2,15 +2,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    gemini_api_key: str = ""
+    groq_api_key: str = ""
     abuseipdb_api_key: str = ""
     virustotal_api_key: str = ""
     nvd_api_key: str = ""
-    firebase_service_account_path: str = "./backend/firebase-service-account.json"
-    firebase_project_id: str = ""
+    # Postgres connection string (e.g. Supabase). Blank = run stateless.
+    database_url: str = ""
     cors_origins: str = "http://localhost:5173"
+    # SMTP settings for email alerts (optional — leave blank to disable)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    alert_email: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

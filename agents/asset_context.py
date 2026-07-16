@@ -1,11 +1,9 @@
 """Asset Context Agent: maintains asset registry (owner, department, criticality, sensitivity).
 
-Reads from Firestore `assets` collection when available. Falls back to a small
-local seed registry so the pipeline is demoable offline / before Firebase is wired up.
+Reads from the `assets` table when a database is configured. Falls back to a
+small local seed registry so the pipeline is demoable offline / before a
+database is wired up.
 """
-import logging
-
-logger = logging.getLogger(__name__)
 
 # criticality: 1 (low) - 5 (critical)
 _LOCAL_SEED_ASSETS = {
@@ -28,30 +26,32 @@ _LOCAL_SEED_ASSETS = {
 _asset_cache: dict[str, dict | None] = {}
 
 
-def _lookup_asset(ip: str) -> dict | None:
-    try:
-        from backend.firebase_client import get_firestore
-        db = get_firestore()
-        query = db.collection("assets").where("ip", "==", ip).limit(1).stream()
-        for doc in query:
-            return doc.to_dict()
-    except Exception:
-        logger.debug("Firestore unavailable; using local asset seed for %s", ip)
-
-    return _LOCAL_SEED_ASSETS.get(ip)
-
-
 def get_asset_by_ip(ip: str) -> dict | None:
+    """Single-IP lookup (used outside the batch pipeline path, e.g. ad-hoc queries)."""
     if ip not in _asset_cache:
-        _asset_cache[ip] = _lookup_asset(ip)
+        from backend.db import get_asset_by_ip as db_get_asset
+        _asset_cache[ip] = db_get_asset(ip) or _LOCAL_SEED_ASSETS.get(ip)
     return _asset_cache[ip]
+
+
+def _populate_cache(ips: list[str]) -> None:
+    new_ips = [ip for ip in ips if ip not in _asset_cache]
+    if not new_ips:
+        return
+
+    from backend.db import get_assets_by_ips
+    found = get_assets_by_ips(new_ips)  # one round trip for every uncached IP
+    for ip in new_ips:
+        _asset_cache[ip] = found.get(ip) or _LOCAL_SEED_ASSETS.get(ip)
 
 
 def enrich_finding(finding: dict) -> dict:
     ip = finding.get("ip")
-    asset = get_asset_by_ip(ip) if ip else None
+    asset = _asset_cache.get(ip) if ip else None
     return {**finding, "asset_context": asset}
 
 
 def enrich_findings(findings: list[dict]) -> list[dict]:
+    unique_ips = list(dict.fromkeys(f["ip"] for f in findings if f.get("ip")))
+    _populate_cache(unique_ips)
     return [enrich_finding(f) for f in findings]

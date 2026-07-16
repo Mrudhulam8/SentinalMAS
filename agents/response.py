@@ -8,6 +8,7 @@ ATTACK_ACTIONS = {
     "port_scan": ["Block IP", "Notify administrator"],
     "suspicious_traffic": ["Block IP", "Notify administrator"],
     "privilege_escalation": ["Disable account", "Notify administrator", "Patch vulnerable systems"],
+    "impossible_travel": ["Disable account", "Enable MFA", "Notify administrator"],
 }
 
 THREAT_LEVEL_EXTRA_ACTIONS = {

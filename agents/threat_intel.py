@@ -1,5 +1,7 @@
 """Threat Intelligence Agent: IP/domain reputation + MITRE ATT&CK mapping."""
 import logging
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 
@@ -19,6 +21,7 @@ MITRE_MAPPING = {
     "port_scan": {"technique_id": "T1046", "technique": "Network Service Discovery"},
     "suspicious_traffic": {"technique_id": "T1071", "technique": "Application Layer Protocol"},
     "privilege_escalation": {"technique_id": "T1068", "technique": "Exploitation for Privilege Escalation"},
+    "impossible_travel": {"technique_id": "T1078", "technique": "Valid Accounts"},
 }
 
 
@@ -72,16 +75,61 @@ def check_ip_virustotal(ip: str) -> dict | None:
         return None
 
 
+# Per-IP reputation cache. Many findings share an IP, and the reputation APIs
+# have tight free-tier rate limits (VirusTotal: 4 req/min), so each IP is looked
+# up at most once per process.
+_reputation_cache: dict[str, dict] = {}
+_NO_REPUTATION = {"abuseipdb": None, "virustotal": None}
+
+# A large upload can contain far more unique attacker IPs than the free-tier
+# reputation APIs can service on demand. Bound each pipeline run to a fixed
+# number of *new* lookups and a wall-clock budget, so enrichment can never
+# stall the request for minutes — IPs beyond the budget simply go without
+# live reputation data (mitre mapping still applies) rather than blocking.
+MAX_NEW_LOOKUPS_PER_RUN = 25
+TIME_BUDGET_SECONDS = 8.0
+
+# Shared, reused across lookups — creating/tearing down an executor per IP has
+# real OS thread-lifecycle overhead (noticeably so on Windows).
+_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="threat-intel")
+
+
+def _fetch_reputation(ip: str) -> dict:
+    """Look up AbuseIPDB + VirusTotal for one IP concurrently (not sequentially)."""
+    abuse_future = _executor.submit(check_ip_abuseipdb, ip)
+    vt_future = _executor.submit(check_ip_virustotal, ip)
+    return {"abuseipdb": abuse_future.result(), "virustotal": vt_future.result()}
+
+
+def _populate_cache(ips: list[str]) -> None:
+    start = time.monotonic()
+    lookups = 0
+    for ip in ips:
+        if ip in _reputation_cache:
+            continue
+        if lookups >= MAX_NEW_LOOKUPS_PER_RUN or (time.monotonic() - start) > TIME_BUDGET_SECONDS:
+            logger.info(
+                "Threat intel budget reached after %d new lookup(s); remaining "
+                "findings proceed without live reputation data", lookups,
+            )
+            break
+        _reputation_cache[ip] = _fetch_reputation(ip)
+        lookups += 1
+
+
 def enrich_finding(finding: dict) -> dict:
     """Attach IP reputation + MITRE mapping to a single Log Analysis finding."""
     ip = finding.get("ip")
+    reputation = _reputation_cache.get(ip, _NO_REPUTATION) if ip else _NO_REPUTATION
     enrichment = {
         "mitre": map_to_mitre(finding.get("attack_type")),
-        "abuseipdb": check_ip_abuseipdb(ip) if ip else None,
-        "virustotal": check_ip_virustotal(ip) if ip else None,
+        "abuseipdb": reputation["abuseipdb"],
+        "virustotal": reputation["virustotal"],
     }
     return {**finding, "threat_intel": enrichment}
 
 
 def enrich_findings(findings: list[dict]) -> list[dict]:
+    unique_ips = list(dict.fromkeys(f["ip"] for f in findings if f.get("ip")))
+    _populate_cache(unique_ips)
     return [enrich_finding(f) for f in findings]
